@@ -9,6 +9,10 @@ import (
 
 const configFileName = ".gatorconfig.json"
 
+type State struct {
+	Config *Config
+}
+
 type Config struct {
 	DbUrl           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
