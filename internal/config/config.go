@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/peeta98/blog-aggregator/internal/database"
 	"os"
 	"path/filepath"
 )
@@ -11,6 +12,7 @@ const configFileName = ".gatorconfig.json"
 
 type State struct {
 	Config *Config
+	Db     *database.Queries
 }
 
 type Config struct {
