@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	_ "github.com/lib/pq"
 	"github.com/peeta98/blog-aggregator/internal/commands"
 	"github.com/peeta98/blog-aggregator/internal/config"
+	"github.com/peeta98/blog-aggregator/internal/database"
 	"log"
 	"os"
 )
@@ -13,15 +16,25 @@ func main() {
 		log.Fatal(err)
 	}
 
+	db, err := sql.Open("postgres", cfg.DbUrl)
+	if err != nil {
+		log.Fatalf("error connecting to db: %v", err)
+	}
+	defer db.Close()
+	dbQueries := database.New(db)
+
 	state := config.State{
 		Config: &cfg,
+		Db:     dbQueries,
 	}
 
 	cli := commands.NewCommands()
 	cli.Register("login", commands.HandlerLogin)
+	cli.Register("register", commands.HandlerRegister)
 
 	if len(os.Args) < 2 {
-		log.Fatal("not enough arguments")
+		log.Fatal("Usage: cli <command> [args...]")
+		return
 	}
 
 	cmd := &commands.Command{

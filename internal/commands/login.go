@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/peeta98/blog-aggregator/internal/config"
@@ -16,7 +17,13 @@ func HandlerLogin(s *config.State, cmd *Command) error {
 	}
 
 	username := cmd.Args[0]
-	err := s.Config.SetUser(username)
+
+	_, err := s.Db.GetUser(context.Background(), username)
+	if err != nil {
+		return errors.New("username doesn't exist")
+	}
+
+	err = s.Config.SetUser(username)
 	if err != nil {
 		return err
 	}
