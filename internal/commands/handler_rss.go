@@ -4,9 +4,58 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/peeta98/blog-aggregator/internal/config"
+	"github.com/peeta98/blog-aggregator/internal/database"
 	"github.com/peeta98/blog-aggregator/internal/rss"
+	"net/url"
+	"time"
 )
+
+func HandlerAddFeed(s *config.State, cmd *Command) error {
+	if len(cmd.Args) != 2 {
+		return errors.New("addfeed command requires two arguments <name> <url>")
+	}
+
+	feedName := cmd.Args[0]
+	feedUrl := cmd.Args[1]
+	err := validateFeedUrl(feedUrl)
+	if err != nil {
+		return err
+	}
+
+	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("failed to get authenticated user: %v", err)
+	}
+
+	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      feedName,
+		Url:       feedUrl,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't create feed: %v", err)
+	}
+
+	fmt.Printf("Feed successfully created with name '%s' and url '%s'\n", feed.Name, feed.Url)
+
+	return nil
+}
+
+func validateFeedUrl(feedUrl string) error {
+	parsedUrl, err := url.Parse(feedUrl)
+	if err != nil {
+		return fmt.Errorf("invalid feed URL: %v", err)
+	}
+	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
+		return errors.New("feed URL must use HTTP or HTTPS protocol")
+	}
+	return nil
+}
 
 func HandlerAggregate(s *config.State, cmd *Command) error {
 	if len(cmd.Args) > 0 {

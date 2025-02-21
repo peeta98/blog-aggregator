@@ -57,7 +57,7 @@ func HandlerLogin(s *config.State, cmd *Command) error {
 
 	_, err := s.Db.GetUser(context.Background(), username)
 	if err != nil {
-		return errors.New("username doesn't exist")
+		return fmt.Errorf("username doesn't exist: %v", err)
 	}
 
 	err = s.Config.SetUser(username)
