@@ -36,7 +36,7 @@ func printFeeds(feeds []database.GetFeedsRow) {
 	}
 }
 
-func HandlerAddFeed(s *config.State, cmd *Command) error {
+func HandlerAddFeed(s *config.State, cmd *Command, user database.User) error {
 	if len(cmd.Args) != 2 {
 		return errors.New("command <addfeed> requires two arguments <name> <url>")
 	}
@@ -46,11 +46,6 @@ func HandlerAddFeed(s *config.State, cmd *Command) error {
 	err := validateFeedUrl(feedUrl)
 	if err != nil {
 		return err
-	}
-
-	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("failed to get authenticated user: %v", err)
 	}
 
 	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
@@ -92,12 +87,12 @@ func validateFeedUrl(feedUrl string) error {
 	return nil
 }
 
-func HandlerListFeedFollows(s *config.State, cmd *Command) error {
+func HandlerListFeedFollows(s *config.State, cmd *Command, user database.User) error {
 	if len(cmd.Args) != 0 {
 		return errors.New("command <following> doesn't accept any args")
 	}
 
-	feedFollows, err := s.Db.GetFeedFollowsForUser(context.Background(), s.Config.CurrentUserName)
+	feedFollows, err := s.Db.GetFeedFollowsForUser(context.Background(), user.Name)
 	if err != nil {
 		return fmt.Errorf("couldn't get feeds that user follows: %v", err)
 	}
@@ -114,7 +109,7 @@ func printFollowedFeedNames(feedFollows []database.GetFeedFollowsForUserRow) {
 	}
 }
 
-func HandlerFollowFeed(s *config.State, cmd *Command) error {
+func HandlerFollowFeed(s *config.State, cmd *Command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return errors.New("command <follow> requires one argument <feedUrl>")
 	}
@@ -123,11 +118,6 @@ func HandlerFollowFeed(s *config.State, cmd *Command) error {
 	feed, err := s.Db.GetFeedByUrl(context.Background(), feedUrl)
 	if err != nil {
 		return fmt.Errorf("couldn't get feed based on the current URL: %v", err)
-	}
-
-	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("username doesn't exist: %v", err)
 	}
 
 	feedFollow, err := s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
