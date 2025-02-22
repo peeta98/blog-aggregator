@@ -12,9 +12,33 @@ import (
 	"time"
 )
 
+func HandlerListFeeds(s *config.State, cmd *Command) error {
+	if len(cmd.Args) != 0 {
+		return errors.New("command <feeds> doesn't accept args")
+	}
+
+	feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't fetch feeds from DB: %v", err)
+	}
+
+	printFeeds(feeds)
+
+	return nil
+}
+
+func printFeeds(feeds []database.GetFeedsRow) {
+	for i, feed := range feeds {
+		fmt.Printf("Feed %d\n", i+1)
+		fmt.Printf("Name of the feed: %s\n", feed.Name)
+		fmt.Printf("URL of the feed: %s\n", feed.Url)
+		fmt.Printf("User that created the feed: %s\n", feed.UserName)
+	}
+}
+
 func HandlerAddFeed(s *config.State, cmd *Command) error {
 	if len(cmd.Args) != 2 {
-		return errors.New("addfeed command requires two arguments <name> <url>")
+		return errors.New("command <addfeed> requires two arguments <name> <url>")
 	}
 
 	feedName := cmd.Args[0]
