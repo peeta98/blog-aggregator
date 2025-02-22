@@ -98,11 +98,15 @@ func HandlerListFeedFollows(s *config.State, cmd *Command, user database.User) e
 	}
 
 	printFollowedFeedNames(feedFollows)
-
 	return nil
 }
 
 func printFollowedFeedNames(feedFollows []database.GetFeedFollowsForUserRow) {
+	if len(feedFollows) == 0 {
+		fmt.Println("User is currently not following any feed.")
+		return
+	}
+
 	fmt.Println("List of Feeds that current user follows:")
 	for i, feedFollow := range feedFollows {
 		fmt.Printf("Feed %d: %s\n", i+1, feedFollow.FeedName)
@@ -115,6 +119,10 @@ func HandlerFollowFeed(s *config.State, cmd *Command, user database.User) error 
 	}
 
 	feedUrl := cmd.Args[0]
+	if err := validateFeedUrl(feedUrl); err != nil {
+		return err
+	}
+
 	feed, err := s.Db.GetFeedByUrl(context.Background(), feedUrl)
 	if err != nil {
 		return fmt.Errorf("couldn't get feed based on the current URL: %v", err)
@@ -132,6 +140,28 @@ func HandlerFollowFeed(s *config.State, cmd *Command, user database.User) error 
 	}
 
 	fmt.Printf("User %s now follows %s!\n", feedFollow.UserName, feedFollow.FeedName)
+
+	return nil
+}
+
+func HandlerUnfollowFeed(s *config.State, cmd *Command, user database.User) error {
+	if len(cmd.Args) != 1 {
+		return errors.New("command <unfollow> requires one argument <feedUrl>")
+	}
+	feedUrl := cmd.Args[0]
+	if err := validateFeedUrl(feedUrl); err != nil {
+		return err
+	}
+
+	err := s.Db.DeleteFeedFollow(context.Background(), database.DeleteFeedFollowParams{
+		UserID: user.ID,
+		Url:    feedUrl,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't unfollow feed: %v", err)
+	}
+
+	fmt.Printf("%s has successfully unfollowed %s!\n", user.Name, feedUrl)
 
 	return nil
 }

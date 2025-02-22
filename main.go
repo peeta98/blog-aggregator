@@ -38,6 +38,7 @@ func main() {
 	cli.Register("feeds", commands.HandlerListFeeds)
 	cli.Register("follow", commands.MiddlewareLoggedIn(commands.HandlerFollowFeed))
 	cli.Register("following", commands.MiddlewareLoggedIn(commands.HandlerListFeedFollows))
+	cli.Register("unfollow", commands.MiddlewareLoggedIn(commands.HandlerUnfollowFeed))
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
