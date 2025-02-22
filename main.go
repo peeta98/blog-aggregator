@@ -36,6 +36,8 @@ func main() {
 	cli.Register("agg", commands.HandlerAggregate)
 	cli.Register("addfeed", commands.HandlerAddFeed)
 	cli.Register("feeds", commands.HandlerListFeeds)
+	cli.Register("follow", commands.HandlerFollowFeed)
+	cli.Register("following", commands.HandlerListFeedFollows)
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")

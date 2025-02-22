@@ -65,7 +65,7 @@ func HandlerLogin(s *config.State, cmd *Command) error {
 		return err
 	}
 
-	fmt.Printf("User '%s' has been set in the config file!\n", username)
+	fmt.Printf("User '%s' is now logged in!\n", username)
 
 	return nil
 }

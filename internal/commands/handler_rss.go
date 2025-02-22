@@ -65,6 +65,17 @@ func HandlerAddFeed(s *config.State, cmd *Command) error {
 		return fmt.Errorf("couldn't create feed: %v", err)
 	}
 
+	_, err = s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID:    feed.ID,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't create feed follow: %v", err)
+	}
+
 	fmt.Printf("Feed successfully created with name '%s' and url '%s'\n", feed.Name, feed.Url)
 
 	return nil
@@ -78,6 +89,60 @@ func validateFeedUrl(feedUrl string) error {
 	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
 		return errors.New("feed URL must use HTTP or HTTPS protocol")
 	}
+	return nil
+}
+
+func HandlerListFeedFollows(s *config.State, cmd *Command) error {
+	if len(cmd.Args) != 0 {
+		return errors.New("command <following> doesn't accept any args")
+	}
+
+	feedFollows, err := s.Db.GetFeedFollowsForUser(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("couldn't get feeds that user follows: %v", err)
+	}
+
+	printFollowedFeedNames(feedFollows)
+
+	return nil
+}
+
+func printFollowedFeedNames(feedFollows []database.GetFeedFollowsForUserRow) {
+	fmt.Println("List of Feeds that current user follows:")
+	for i, feedFollow := range feedFollows {
+		fmt.Printf("Feed %d: %s\n", i+1, feedFollow.FeedName)
+	}
+}
+
+func HandlerFollowFeed(s *config.State, cmd *Command) error {
+	if len(cmd.Args) != 1 {
+		return errors.New("command <follow> requires one argument <feedUrl>")
+	}
+
+	feedUrl := cmd.Args[0]
+	feed, err := s.Db.GetFeedByUrl(context.Background(), feedUrl)
+	if err != nil {
+		return fmt.Errorf("couldn't get feed based on the current URL: %v", err)
+	}
+
+	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("username doesn't exist: %v", err)
+	}
+
+	feedFollow, err := s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID:    feed.ID,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't create feed follow: %v", err)
+	}
+
+	fmt.Printf("User %s now follows %s!\n", feedFollow.UserName, feedFollow.FeedName)
+
 	return nil
 }
 
