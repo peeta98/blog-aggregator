@@ -8,6 +8,7 @@ import (
 	"github.com/peeta98/blog-aggregator/internal/config"
 	"github.com/peeta98/blog-aggregator/internal/database"
 	"github.com/peeta98/blog-aggregator/internal/rss"
+	"log"
 	"net/url"
 	"time"
 )
@@ -170,24 +171,45 @@ func HandlerAggregate(s *config.State, cmd *Command) error {
 	if len(cmd.Args) > 0 {
 		return errors.New("command <agg> doesn't accept args")
 	}
-
-	rssFeed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	timeBetweenRequests, err := time.ParseDuration("1m0s")
 	if err != nil {
-		return fmt.Errorf("couldn't fetch rss feed from the URL provided: %v", err)
+		return fmt.Errorf("invalid duration: %v", err)
+	}
+	fmt.Println("Collecting feeds every 1m0s")
+
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		err := scrapeFeeds(s)
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func scrapeFeeds(s *config.State) error {
+	nextFeed, err := s.Db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't fetch next feed to scrape: %v", err)
+	}
+
+	err = s.Db.MarkFeedFetched(context.Background(), nextFeed.ID)
+	if err != nil {
+		return fmt.Errorf("couldn't mark feed as fetched: %v", err)
+	}
+
+	rssFeed, err := rss.FetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		return err
 	}
 
 	printRSSFeed(rssFeed)
+	log.Printf("Feed %s collected, %v posts found", nextFeed.Name, len(rssFeed.Channel.Item))
+
 	return nil
 }
 
 func printRSSFeed(rssFeed *rss.Feed) {
-	fmt.Printf("Channel: %s\n", rssFeed.Channel.Title)
-	fmt.Printf("Description: %s\n", rssFeed.Channel.Description)
-	fmt.Println("\nArticles:")
 	for _, item := range rssFeed.Channel.Item {
 		fmt.Printf("\nTitle: %s\n", item.Title)
-		fmt.Printf("Link: %s\n", item.Link)
-		fmt.Printf("Description: %s\n", item.Description)
-		fmt.Printf("Published: %s\n", item.PubDate)
 	}
 }
