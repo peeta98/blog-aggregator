@@ -10,8 +10,53 @@ import (
 	"github.com/peeta98/blog-aggregator/internal/rss"
 	"log"
 	"net/url"
+	"strconv"
 	"time"
 )
+
+func HandlerBrowsePosts(s *config.State, cmd *Command, user database.User) error {
+	var limitPosts int32
+	if len(cmd.Args) != 1 {
+		// If optional "limit" parameter is not provided, default the limit to 2
+		limitPosts = 2
+	} else {
+		limit, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("invalid limit: %v", err)
+		}
+		if limit <= 0 {
+			return fmt.Errorf("limit must be a positive number")
+		}
+		limitPosts = int32(limit)
+	}
+
+	posts, err := s.Db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  limitPosts,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't get posts: %v", err)
+	}
+
+	printPosts(posts)
+
+	return nil
+}
+
+func printPosts(posts []database.GetPostsForUserRow) {
+	if len(posts) == 0 {
+		fmt.Println("You have no posts to browse. Try following some feeds first!")
+		return
+	}
+
+	for _, post := range posts {
+		fmt.Printf("%s from %s\n", post.PublishedAt.Format("Mon Jan 2"), post.FeedName)
+		fmt.Printf("--- %s ---\n", post.Title)
+		fmt.Printf("    %v\n", post.Description)
+		fmt.Printf("Link: %s\n", post.Url)
+		fmt.Println("=====================================")
+	}
+}
 
 func HandlerListFeeds(s *config.State, cmd *Command) error {
 	if len(cmd.Args) != 0 {
@@ -202,14 +247,37 @@ func scrapeFeeds(s *config.State) error {
 		return err
 	}
 
-	printRSSFeed(rssFeed)
+	err = savePosts(rssFeed.Channel.Item, &nextFeed, s)
 	log.Printf("Feed %s collected, %v posts found", nextFeed.Name, len(rssFeed.Channel.Item))
 
 	return nil
 }
 
-func printRSSFeed(rssFeed *rss.Feed) {
-	for _, item := range rssFeed.Channel.Item {
-		fmt.Printf("\nTitle: %s\n", item.Title)
+func savePosts(items []rss.Item, feed *database.Feed, s *config.State) error {
+	for _, item := range items {
+		publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			// Try alternative format if first parse fails
+			publishedAt, err = time.Parse(time.RFC822, item.PubDate)
+			if err != nil {
+				return fmt.Errorf("could not parse date %s: %v", item.PubDate, err)
+			}
+		}
+
+		_, err = s.Db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: item.Description,
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			return fmt.Errorf("could not create post: %v", err)
+		}
 	}
+	fmt.Println("Posts have been successfully saved!")
+	return nil
 }
