@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,8 +25,8 @@ type CreatePostParams struct {
 	UpdatedAt   time.Time
 	Title       string
 	Url         string
-	Description string
-	PublishedAt time.Time
+	Description sql.NullString
+	PublishedAt sql.NullTime
 	FeedID      uuid.UUID
 }
 
@@ -56,8 +57,8 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 
 const getPostsForUser = `-- name: GetPostsForUser :many
 SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, f.name AS feed_name FROM posts p
+JOIN feed_follows f_f ON f_f.feed_id = p.feed_id
 JOIN feeds f ON f.id = p.feed_id
-JOIN feed_follows f_f ON f_f.feed_id = f.id
 WHERE f_f.user_id = $1
 ORDER BY p.published_at DESC
 LIMIT $2
@@ -74,8 +75,8 @@ type GetPostsForUserRow struct {
 	UpdatedAt   time.Time
 	Title       string
 	Url         string
-	Description string
-	PublishedAt time.Time
+	Description sql.NullString
+	PublishedAt sql.NullTime
 	FeedID      uuid.UUID
 	FeedName    string
 }
