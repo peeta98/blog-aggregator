@@ -1,11 +1,9 @@
 -- +goose Up
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- UUID as primary key
+    id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    name VARCHAR(50) UNIQUE NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 
 -- +goose Down
