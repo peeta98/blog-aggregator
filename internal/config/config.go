@@ -3,17 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/peeta98/blog-aggregator/internal/database"
 	"os"
 	"path/filepath"
 )
 
 const configFileName = ".gatorconfig.json"
-
-type State struct {
-	Config *Config
-	Db     *database.Queries
-}
 
 type Config struct {
 	DbUrl           string `json:"db_url"`
@@ -22,7 +16,7 @@ type Config struct {
 
 func (cfg *Config) SetUser(username string) error {
 	cfg.CurrentUserName = username
-	return write(cfg)
+	return write(*cfg)
 }
 
 func Read() (Config, error) {
@@ -33,14 +27,14 @@ func Read() (Config, error) {
 
 	file, err := os.Open(configPath)
 	if err != nil {
-		return Config{}, fmt.Errorf("could not open config file: %v", err)
+		return Config{}, fmt.Errorf("couldn't open config file: %v", err)
 	}
 	defer file.Close()
 
 	var cfg Config
 	decoder := json.NewDecoder(file)
 	if err = decoder.Decode(&cfg); err != nil {
-		return Config{}, fmt.Errorf("could not decode from file: %v", err)
+		return Config{}, fmt.Errorf("couldn't decode from file: %v", err)
 	}
 
 	return cfg, nil
@@ -49,13 +43,13 @@ func Read() (Config, error) {
 func getConfigPath() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("could not get Home directory: %v", err)
+		return "", fmt.Errorf("couldn't get Home directory: %v", err)
 	}
 	configFullPath := filepath.Join(homeDir, configFileName)
 	return configFullPath, nil
 }
 
-func write(cfg *Config) error {
+func write(cfg Config) error {
 	configPath, err := getConfigPath()
 	if err != nil {
 		return err
@@ -63,13 +57,13 @@ func write(cfg *Config) error {
 
 	file, err := os.Create(configPath)
 	if err != nil {
-		return fmt.Errorf("could not create named file %s: %v", configPath, err)
+		return fmt.Errorf("couldn't create named file %s: %v", configPath, err)
 	}
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	if err = encoder.Encode(cfg); err != nil {
-		return fmt.Errorf("could not encode config to file: %v", err)
+		return fmt.Errorf("couldn't encode config to file: %v", err)
 	}
 	return nil
 }
