@@ -11,17 +11,6 @@ import (
 	"time"
 )
 
-func MiddlewareLoggedIn(handler AuthenticatedCommandHandler) CommandHandler {
-	return func(state *config.State, command *Command) error {
-		user, err := state.Db.GetUser(context.Background(), state.Config.CurrentUserName)
-		if err != nil {
-			return fmt.Errorf("failed to get authenticated user: %v", err)
-		}
-
-		return handler(state, command, user)
-	}
-}
-
 func HandlerRegister(s *config.State, cmd *Command) error {
 	if len(cmd.Args) == 0 {
 		return errors.New("register command requires single argument <username>")

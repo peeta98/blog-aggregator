@@ -6,7 +6,7 @@ import (
 	"github.com/peeta98/blog-aggregator/internal/database"
 )
 
-type CommandHandler func(*config.State, *Command) error
+type CommandHandler func(*config.State, Command) error
 
 type AuthenticatedCommandHandler func(*config.State, *Command, database.User) error
 
