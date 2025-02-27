@@ -42,9 +42,9 @@ func main() {
 	cli.register("agg", handlerAggregate)
 	cli.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cli.register("feeds", handlerListFeeds)
-	cli.register("follow", middlewareLoggedIn(commands.HandlerFollowFeed))
-	cli.register("following", middlewareLoggedIn(commands.HandlerListFeedFollows))
-	cli.register("unfollow", middlewareLoggedIn(commands.HandlerUnfollowFeed))
+	cli.register("follow", middlewareLoggedIn(handlerFollowFeed))
+	cli.register("following", middlewareLoggedIn(handlerListFeedFollows))
+	cli.register("unfollow", middlewareLoggedIn(handlerUnfollowFeed))
 	cli.register("browse", middlewareLoggedIn(commands.HandlerBrowsePosts))
 
 	if len(os.Args) < 2 {
